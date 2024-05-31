@@ -1,0 +1,201 @@
+﻿@inherits LayoutComponentBase
+@inject AppData appData;
+@inject NavigationManager NavigationManager;
+@inject AuthenticationStateProvider GetAuthenticationStateAsync
+@inject HttpClient http
+@inject LlmChatClient ChatClient
+@using CCRM2.Shared.Models
+@using CCRM2.Client.Services
+@using CCRM2.Client.Services.Toasts
+@inject IJSRuntime JsRuntime
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Navigations
+@using Syncfusion.Blazor.Spinner
+@using Syncfusion.Blazor.Buttons
+@inject Microsoft.Extensions.Configuration.IConfiguration _config
+@inject IStringLocalizer<GlobalRes> Loc
+@using CCRM2.Client.AIChat
+
+<div class="layout-wrapper layout-content-navbar">
+    <div class="layout-container">
+        <nav style="margin: 0; width: 100vw; left: 0; z-index: 1801; padding-right:1rem;" class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme"
+             id="layout-navbar">
+
+            <div class="app-brand demo" style="margin-right: 2rem; width: 16.25rem; height: 100%;padding:0 1rem;">
+                <a href="" class="app-brand-link">
+                    <span class="app-brand-logo demo me-1">
+                        <span style="color: var(--bs-primary)">
+                            <img src="https://www.channelcrm.dk/wp-content/uploads/2016/09/ChannelCrm.png" style="height: 20px;" />
+                        </span>
+                    </span>
+                    <span class="app-brand-text demo menu-text fw-semibold ms-2"></span>
+                </a>
+                @*<div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
+                <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)" @onclick="ExpandMenu">
+                <i class="mdi mdi-menu mdi-24px"></i>
+                </a>
+                </div>*@
+                <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto" @onclick="ToggleSideBar">
+                    <i class="mdi menu-toggle-icon align-middle mdi-20px"></i>
+                    @*<i class="mdi menu-toggle-icon d-xl-block align-middle mdi-20px"></i>*@
+                </a>
+            </div>
+            <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
+                <AuthorizeView Roles="User">
+                    <div class="navbar-nav align-items-center">
+                        <div class="nav-item d-flex align-items-center">
+                            <i class="mdi mdi-magnify mdi-24px lh-0"></i>
+                            <input name="globalsearchinput" type="search" @bind="@SearchValue" class="form-control border-0 shadow-none bg-transparent" placeholder="Global Søgning" @onkeypress="@KeyPressed" @oninput="@OnInputEvent" />
+                        </div>
+                    </div>
+                </AuthorizeView>
+                <ul class="navbar-nav flex-row align-items-center ms-auto">
+                    <li class="nav-item navbar-dropdown dropdown-user dropdown">
+                        <LoginDisplay />
+                    </li>
+                </ul>
+            </div>
+        </nav>
+        <AuthorizeView Roles="User">
+            <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme shadow overflow-visible" style="margin-top:64px !important;" data-bg-class="bg-menu-theme">
+                @*<div class="app-brand demo">
+                <a href="" class="app-brand-link">
+                <span class="app-brand-logo demo me-1">
+                <span style="color: var(--bs-primary)">
+                <img src="https://www.channelcrm.dk/wp-content/uploads/2016/09/ChannelCrm.png" style="height: 20px;" />
+                </span>
+                </span>
+                <span class="app-brand-text demo menu-text fw-semibold ms-2"></span>
+                </a>
+                <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto" @onclick="ToggleSideBar">
+                <i class="mdi menu-toggle-icon d-xl-block align-middle mdi-20px"></i>
+                </a>
+                </div>*@
+                <div class="menu-inner-shadow"></div>
+                <ul class="menu-inner py-1">
+                    <SfSpinner @bind-Visible="SpinnerVisible" Label="@Loc["Loading menu..."]"></SfSpinner>
+                    @if (MenuItemModels != null)
+                    {
+                        @foreach (var menu in MenuItemModels)
+                        {
+                            @if (menu.Items == null)
+                            {
+                                <li class="menu-item @GetActive(menu.Url, NavLinkMatch.All)">
+                                    <NavLink href="@menu.Url" Match="NavLinkMatch.All"
+                                             class="menu-link">
+                                        <i class="menu-icon @menu.IconCss"></i>
+                                        <div data-i18n="@Loc[menu.Text]">@Loc[menu.Text]</div>
+                                    </NavLink>
+                                </li>
+                            }
+                            else
+                            {
+                                <li class="menu-item dropend parent-menu-@(menu.Id)" @onclick="@(()=>MenuClicked(menu.Id))">
+                                    <a href="javascript:void(0);" class="menu-link dropdown-toggle btn-dropdown" data-bs-auto-close="inside" data-bs-toggle="dropdown">
+                                        <i class="menu-icon @menu.IconCss"></i>
+                                        <div data-i18n="@Loc[menu.Text]">@Loc[menu.Text]</div>
+                                    </a>
+                                    <div class="dropdown">
+                                        <ul class="dropdown-menu">
+                                            @foreach (var item in menu.Items)
+                                            {
+                                                <li class="@GetActive(item.Url, NavLinkMatch.All)">
+                                                    <NavLink href="@item.Url" Match="NavLinkMatch.All"
+                                                             class="menu-link dropdown-item">
+                                                        <i class="menu-icon @item.IconCss"></i>
+                                                        <div data-i18n="&nbsp;@Loc[item.Text]">&nbsp;@Loc[item.Text]</div>
+                                                    </NavLink>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </div>
+                                </li>
+                            }
+                        }
+                    }
+                </ul>
+            </aside>
+        </AuthorizeView>
+        <div class="layout-page">
+            <nav style="margin:0;" class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme"
+                 id="layout-navbar">
+                <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
+                    <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)" @onclick="ExpandMenu">
+                        <i class="mdi mdi-menu mdi-24px"></i>
+                    </a>
+                </div>
+                <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
+                    <AuthorizeView Roles="User">
+                        <div class="navbar-nav align-items-center">
+                            <div class="nav-item d-flex align-items-center">
+                                <i class="mdi mdi-magnify mdi-24px lh-0"></i>
+                                <input type="search" @bind="@SearchValue" class="form-control border-0 shadow-none bg-transparent" placeholder="Global Søgning" @onkeypress="@KeyPressed" @oninput="@OnInputEvent" />
+                            </div>
+                        </div>
+                    </AuthorizeView>
+                    <ul class="navbar-nav flex-row align-items-center ms-auto">
+                        <li class="nav-item navbar-dropdown dropdown-user dropdown">
+                            <LoginDisplay showusermenu="true" />
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <div class="main-content" id="main-text">
+                <div class="text-content">@Body</div>
+            </div>
+        </div>
+    </div>
+</div>
+@if (!AIChatVisible && !SpinnerVisible)
+{
+    <SfSpeedDial @ref="SpeedDial" Position="FabPosition.BottomRight" OpenIconCss="mdi mdi-menu" CloseIconCss="mdi mdi-close" Content="AI">
+        <PopupTemplate>
+            <div class="card" style="max-width: 300px;">
+                <div class="card-header">
+                    <div class="row">
+                        <div class="col-10">
+                            <h5>AI Tools</h5>
+                        </div>
+                        <div class="col-2">
+                            <button class="btn btn-close" @onclick=@(async ()=>await SpeedDial.HideAsync())><span class="mdi mdi-close"></span></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <button class="btn btn-primary" @onclick=@(async()=> await OpenChatDialog())><span class="mdi mdi-chat-outline"></span>AI Chat</button>
+                    </div>
+                    @if (_customPrompts != null || _customPrompts.Count != 0)
+                    {
+                        <div class="row mt-2" style="max-height: 300px;overflow: auto;">
+                            @foreach (CustomPrompts customPrompt in _customPrompts)
+                            {
+                                <div class="card text-white bg-dark mt-2" @onclick="() => OnSelectedRequest(customPrompt.Prompt)">
+                                    <div style="padding: 0px; margin-top:5px;" class="card-body">
+                                        <p style="margin-bottom: 10px;">
+                                            @customPrompt.Prompt
+                                        </p>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </PopupTemplate>
+    </SfSpeedDial>
+}
+
+<SfDialog @ref="LlmChatDialog" Width="90%" Visible="AIChatVisible" CloseOnEscape="true" IsModal="true" ShowCloseIcon="true" class="dialog-scrollbar">
+    <DialogTemplates>
+        <Header>AI Chat</Header>
+        <Content>
+            <AIChatComponent @ref="AIChatComponent"></AIChatComponent>
+        </Content>
+    </DialogTemplates>
+    <DialogEvents Closed="@(()=> AIChatVisible = false)"></DialogEvents>
+</SfDialog>
+
+<SfDialogProvider />
+<SfToastProvider />

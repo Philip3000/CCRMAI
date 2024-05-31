@@ -1,0 +1,82 @@
+﻿@page "/setup/ai/selectdata"
+@using CCRM2.Shared.Models
+@using Services
+@inject HttpClient Http
+@inject AppData appData
+@inject NavigationManager navigationManager
+@using Microsoft.AspNetCore.Authorization
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Cards
+@using CCRM2.Client.Pages.Selectors
+@using System.Collections.ObjectModel
+@inject IStringLocalizer<GlobalRes> Loc
+@inject LlmChatClient ChatClient
+@attribute [Authorize(Roles = "Admin")]
+<Syncfusion.Blazor.Notifications.SfToast Title="Response" @ref="toast" Timeout="2000" ShowCloseButton="true">
+    <Syncfusion.Blazor.Notifications.ToastPosition X="Right" Y="Bottom"></Syncfusion.Blazor.Notifications.ToastPosition>
+</Syncfusion.Blazor.Notifications.SfToast>
+<div style="margin: 5px;">
+
+@if (loaded)
+{
+    <SfButton OnClick="Save">Save</SfButton>
+    <SfButton OnClick="Refresh">Refresh tables</SfButton>
+    <SfButton OnClick="Back">Back</SfButton>
+    <div class="card-container">
+        @foreach (DataTable c in cards)
+        {
+            <SfCard CssClass="@GetCardClass(c.Id)" @onclick="@(() => ToggleCardSelection(c.Id))" ID="@( "card-" + c.Id)">
+                <CardContent>
+                    <div class="title">@c.Title</div>
+                </CardContent>
+            </SfCard>
+        }
+    </div>
+}
+</div>
+
+
+
+
+<style>
+    .card-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-left: 10px;
+        margin-top: 10px;
+    }
+
+    .card {
+        width: 100px;
+        height: 150px;
+        border: 1px solid #ccc;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        background-color: red;
+        word-wrap: break-word; /* Allows long words to wrap */
+        max-width: 100%;
+        
+    }
+
+
+    .card-selected {
+        background-color: green;
+        transition: background-color 0.5s;
+        width: 100px;
+        height: 150px;
+        border: 1px solid black;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border-radius: 7px;
+        word-wrap: break-word; /* Allows long words to wrap */
+        max-width: 100%;
+        
+    }
+
+</style>

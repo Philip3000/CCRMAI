@@ -1,0 +1,119 @@
+﻿@page "/setup/ai/export"
+@using CCRM2.Shared.Models
+@inject HttpClient Http
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Data
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Cards
+@using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Navigations
+@using TooltipPosition = Syncfusion.Blazor.Popups.Position
+@using System.ComponentModel.DataAnnotations;
+@using CCRM2.Client.Pages.Selectors
+@using static CCRM2.Client.Helpers.Utils;
+@inject Services.AppData appData
+@inject NavigationManager navigationManager
+@inject IBlazorDialogService dialogService
+@inject IStringLocalizer<GlobalRes> Loc
+@attribute [Authorize(Roles = "Admin")]
+<div style="margin: 5px;">
+<PageTitle>@Loc["AI Data setup"]</PageTitle>
+
+<SfButton OnClick="Export">Connect tables now</SfButton>
+<SfCard>
+    <CardHeader Title="Selected Tables"></CardHeader>
+    <CardContent>
+        @foreach (DataTable tab in dataTables)
+        {
+            <div>@tab.Title</div>
+        }
+    </CardContent>
+</SfCard>
+<Syncfusion.Blazor.Spinner.SfSpinner @ref="spinner"></Syncfusion.Blazor.Spinner.SfSpinner>
+</div>
+
+<style>
+    .e-grid .e-altrow {
+        background-color: #fafafa
+    }
+
+    .control-section {
+        margin: 0 0% 0 0%;
+        font-size: 16px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .e-card .e-card-horizontal {
+        margin: auto;
+        width: inherit;
+    }
+    a {
+        color: white;
+        text-decoration-color: white;
+    }
+    a:hover {
+        color: white;
+        text-decoration-color: white;
+    }
+    .e-card {
+        background-color: #fafafa;
+        margin-bottom: 10px;
+        border-inline-color: black;
+        margin: 20px 20px;
+        width: 95%;
+    }
+
+    .section-heading {
+        color: #2e6da4;
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+
+    .divider {
+        border-top: 1px solid #ccc;
+    }
+
+    .switch-description {
+        font-size: 11px;
+        color: grey;
+        flex: 0 0 auto;
+    }
+
+    .e-switch-wrapper.switch {
+        width: 58px;
+        height: 24px;
+        border: 1px solid #ccc;
+        overflow: hidden;
+    }
+
+        .e-switch-wrapper.switch .e-switch-inner,
+        .e-switch-wrapper.switch .e-switch-handle {
+            border-radius: 10px;
+        }
+
+        .e-switch-wrapper.switch .e-switch-handle,
+        .e-switch-wrapper.switch:not(.e-switch-disabled):hover .e-switch-handle:not(.e-switch-active) {
+            background-color: white; /* Set background color for the handle when switch is off */
+        }
+
+            .e-switch-wrapper.switch .e-switch-handle.e-switch-active,
+            .e-switch-wrapper.switch:hover .e-switch-handle.e-switch-active {
+                background-color: green; /* Set background color for the handle when switch is off */
+            }
+
+        .e-switch-wrapper.switch .e-switch-on,
+        .e-switch-wrapper.switch:hover .e-switch-inner.e-switch-active .e-switch-on {
+            background-color: darkgreen;
+        }
+
+        .e-switch-wrapper.switch .e-switch-off,
+        .e-switch-wrapper.switch:hover .e-switch-inner:not(.e-switch-active) .e-switch-off {
+            background-color: red;
+        }
+
+
+    
+
+</style>

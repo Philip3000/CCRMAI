@@ -1,0 +1,260 @@
+﻿@using CCRM2.Shared.Models
+@using Services
+@inject HttpClient Http
+@inject AppData appData
+@inject NavigationManager navigationManager
+@using Microsoft.AspNetCore.Authorization
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Lists
+@using CCRM2.Client.Pages.Selectors
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Buttons
+@using System.Collections.ObjectModel
+@using Syncfusion.Blazor.Popups
+@using System.Text.RegularExpressions
+@using System.Web
+@using Syncfusion.Blazor.Navigations
+@inject IStringLocalizer<GlobalRes> Loc
+@inject LlmChatClient ChatClient
+@attribute [Authorize(Roles = "User")]
+
+<div class="container-fluid h-100">
+    <div class="row h-100">
+        <div class="col-12">
+            <div class="row">
+                <SfListView ID="list"
+                            DataSource="@DataSource"
+                            ShowHeader="true"
+                            Height="400px"
+                            HeaderTitle="Personal assistent" style="background: red">
+                    <ListViewFieldSettings TValue="AiMessage" Id="Id" Text="Text"></ListViewFieldSettings>
+                    <ListViewTemplates TValue="AiMessage">
+                        <Template>
+                            @{
+                                AiMessage currentData = context as AiMessage;
+
+                                <div class="flex item__container">
+                                    <div class="flex flex__1 vertical__center flex__center @(currentData.Role == "user" ? "" :  "flex__order__2")">
+                                    </div>
+                                    <div class="flex content__container flex__8 vertical padding @(currentData.Role == "user" ? "right__align" : "left__align")">
+                                        @if (@currentData.Role == "user")
+                                        {
+                                            <div class="bold">You</div>
+                                        }
+                                        else
+                                        {
+                                            <div class="bold">AI <span><img class="img-net" src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Tesla-optimus-bot-gen-2-scaled_%28cropped%29.jpg" /></span></div>
+                                        }
+                                        <div class="small__font">
+                                            <p>@((MarkupString)Regex.Replace(currentData.Content.Message, @"\r\n?|\n", "<br />"))</p>
+                                        </div>
+                                        @if (@currentData.Content.Citations != null && @currentData.Content.Citations.Count > 0)
+                                        {
+                                            <SfAccordion>
+                                                <AccordionItems>
+                                                    @for (int i = 0; i < currentData.Content.Citations.Count; i++)
+                                                    {
+                                                        <AccordionItem Header="@($"Citation {i+1}")" Content="@(Regex.Unescape(currentData.Content.Citations[i]))"></AccordionItem>
+                                                    }
+                                                </AccordionItems>
+                                            </SfAccordion>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </Template>
+                    </ListViewTemplates>
+                </SfListView>
+            </div>
+        </div>
+        <div class="col-12">
+            @if (Prompts.Count > 0)
+            {
+                foreach (CustomPrompts req in Prompts)
+                {
+                    <SfButton style="margin: 5px; border-radius: 5px; max-width: 200px;" OnClick="@(() => OnSelectedRequest(req.Prompt))">
+                        <div style="white-space: normal;">@req.Prompt</div>
+                        <a class="delete-link" style="font-size: x-small; margin: 4px; color: red;" @onclick:preventDefault=true @onclick="@(() => DeleteRequest(req))" href="">Delete</a>
+                    </SfButton>
+                }
+            }
+        </div>
+        <div class="col-12">
+            <div class="flex">
+                <div class="flex__8 padding">
+                    <SfTextBox ShowClearButton=true Placeholder="Type your message"
+                               @ref="@SfTextBox" @bind-Value="input" @onkeyup="@HandleKeyUp">
+                    </SfTextBox>
+                </div>
+                <SfButton style="justify-content: right; border-radius: 30px; height: 30px; color:white; margin: 7px; background-color: darkred;" OnClick="OnClear">C</SfButton>
+                <SfButton style="justify-content: right; border-radius: 30px; height: 30px; margin: 7px; background-color: Green;" OnClick="AddRequest">+</SfButton>
+
+                <div class="flex__1">
+                    <SfButton class="e-btn" style="background-color:blue; margin: 5px; border-radius: 5px;" @onclick="@OnSend">Send</SfButton>
+                </div>
+            </div>
+        </div>
+        <div class="col-12">
+            @if (noConnect == true)
+            {
+                <span style=color: red>NO connection to AI</span>
+            }
+            else
+            {
+                <span style="color: green; outline-color: green; outline-style: dotted; padding: 2px; border-radius: 3px;">Connected</span>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    #list {
+        box-shadow: 0 1px 4px #ddd;
+        border-bottom: 1px solid #ddd;
+    }
+
+    #sample {
+        height: 220px;
+        margin: 0 auto;
+        display: block;
+        max-width: 350px;
+    }
+
+    #list {
+        margin: 0 auto;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+
+        #list .e-list-item {
+            height: auto;
+            cursor: pointer;
+            line-height: 22px;
+            padding: 8px;
+        }
+
+        #list.e-listview .e-list-header {
+            background-color: red;
+            color: white;
+        }
+
+        #list .e-list-item.e-active {
+            background-color: red;
+        }
+
+        #list .e-list-item.e-hover {
+            background-color: red;
+        }
+
+        #list .e-list-item.e-focused {
+            background-color: red;
+        }
+
+    .img-net {
+        border-radius: 20px;
+        width: 20px;
+    }
+
+    .padding {
+        padding: 4px;
+    }
+
+    .delete-link {
+        border: 1px dashed red;
+        border-radius: 2px;
+        padding: 4px;
+    }
+
+        .delete-link:hover {
+            background-color: red;
+            color: white;
+        }
+
+    .right__align {
+        text-align: right;
+        margin-right: 8px;
+        padding-right: 8px;
+    }
+
+    .left__align {
+        margin-left: 8px;
+        padding-left: 8px;
+    }
+
+    .content__container {
+        background-color: white;
+        border-radius: 2px;
+        max-width: fit-content
+    }
+
+    .flex {
+        display: flex;
+    }
+
+    .flex__center {
+        justify-content: center;
+    }
+
+    .vertical__center {
+        align-items: center;
+    }
+
+    .vertical {
+        flex-direction: column;
+    }
+
+    .flex__order__1 {
+        order: 1;
+    }
+
+    /* .e-dialog .e-dlg-content {
+                    width: 700px;
+                    border-radius: 10px;
+                }
+
+                .e-dialog.e-popup {
+                    width: fit-content;
+                    border-radius: 5px;
+                    margin-top: 70px;
+                    top: 0px !important;
+                } */
+
+    .flex__order__2 {
+        order: 2;
+    }
+
+    .flex__1 {
+        flex: 1;
+    }
+
+    .flex__2 {
+        flex: 2;
+    }
+
+    .flex__3 {
+        flex: 3;
+    }
+
+    .flex__5 {
+        flex: 5;
+    }
+
+    .flex__8 {
+        flex: 8;
+    }
+
+    .bold {
+        font-weight: 500;
+    }
+
+    .margin {
+        margin: 10px;
+        width: 350px;
+    }
+
+    .small__font {
+        font-size: 13px;
+        margin: 2px 0;
+    }
+
+</style>
