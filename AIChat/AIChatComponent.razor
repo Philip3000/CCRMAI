@@ -1,4 +1,4 @@
-﻿@using CCRM2.Shared.Models
+@using CCRM2.Shared.Models
 @using Services
 @inject HttpClient Http
 @inject AppData appData
@@ -14,6 +14,7 @@
 @using System.Text.RegularExpressions
 @using System.Web
 @using Syncfusion.Blazor.Navigations
+@using Azure.AI.OpenAI
 @inject IStringLocalizer<GlobalRes> Loc
 @inject LlmChatClient ChatClient
 @attribute [Authorize(Roles = "User")]
@@ -33,7 +34,7 @@
                             @{
                                 AiMessage currentData = context as AiMessage;
 
-                                <div class="flex item__container">
+                                <div class="flex item__container text-break">
                                     <div class="flex flex__1 vertical__center flex__center @(currentData.Role == "user" ? "" :  "flex__order__2")">
                                     </div>
                                     <div class="flex content__container flex__8 vertical padding @(currentData.Role == "user" ? "right__align" : "left__align")">
@@ -52,10 +53,18 @@
                                         {
                                             <SfAccordion>
                                                 <AccordionItems>
-                                                    @for (int i = 0; i < currentData.Content.Citations.Count; i++)
-                                                    {
-                                                        <AccordionItem Header="@($"Citation {i+1}")" Content="@(Regex.Unescape(currentData.Content.Citations[i]))"></AccordionItem>
-                                                    }
+                                                    <AccordionItem Header="Citationer">
+                                                        <ContentTemplate>
+                                                            <SfAccordion>
+                                                                <AccordionItems>
+                                                                    @for (int i = 0; i < currentData.Content.Citations.Count; i++)
+                                                                    {
+                                                                        <AccordionItem Id="@($"Citation-{i+1}")" Header="@($"Citation {i+1}")" Content="@(Regex.Unescape(currentData.Content.Citations[i].Content))"></AccordionItem>
+                                                                    }
+                                                                </AccordionItems>
+                                                            </SfAccordion>
+                                                        </ContentTemplate>
+                                                    </AccordionItem>
                                                 </AccordionItems>
                                             </SfAccordion>
                                         }
@@ -208,16 +217,16 @@
     }
 
     /* .e-dialog .e-dlg-content {
-                    width: 700px;
-                    border-radius: 10px;
-                }
+                        width: 700px;
+                        border-radius: 10px;
+                    }
 
-                .e-dialog.e-popup {
-                    width: fit-content;
-                    border-radius: 5px;
-                    margin-top: 70px;
-                    top: 0px !important;
-                } */
+                    .e-dialog.e-popup {
+                        width: fit-content;
+                        border-radius: 5px;
+                        margin-top: 70px;
+                        top: 0px !important;
+                    } */
 
     .flex__order__2 {
         order: 2;
