@@ -8,6 +8,7 @@ using System.Net.Http.Json;
 using System.Threading.Tasks;
 using System.Data;
 using Microsoft.AspNetCore.Components;
+using Azure.AI.OpenAI;
 
 namespace CCRM2.Client.AIChat
 {
@@ -24,9 +25,10 @@ namespace CCRM2.Client.AIChat
         protected override async Task OnInitializedAsync()
         {
             DialogVisible = true;
-            if (ChatClient.Messages != null)
+
+            if (ChatClient.GetMessages() != null)
             {
-                DataSource = ChatClient.Messages;
+                DataSource = ChatClient.GetMessages();
             }
             var response = await Http.GetFromJsonAsync<List<CustomPrompts>>("api/customprompts");
 
@@ -70,7 +72,6 @@ namespace CCRM2.Client.AIChat
                 input = "";
                 await SendMessageAsync(mes);
                 DataSource.Remove(LoadMessage);
-                ChatClient.Messages = DataSource;
                 StateHasChanged();
             }
         }
@@ -79,8 +80,7 @@ namespace CCRM2.Client.AIChat
         {
             if (!string.IsNullOrWhiteSpace(message))
             {
-                message = "Jeg har employeeID: " + $"{ appData.CurrentEmployee.ID}. Min besked til dig er: " + message;
-                var response = await ChatClient.SendMessageAsync(message);
+                AiMessage response = await ChatClient.SendMessageAsync(message);
                 noConnect = false;
                 DataSource.Add(response);
                 StateHasChanged();
